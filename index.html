@@ -20,7 +20,7 @@
         切換隊伍
         <select id="teamSelect"></select>
       </label>
-      <label>
+      <label class="font-size-control">
         字級
         <input id="fontSize" type="range" min="14" max="24" value="17" />
       </label>
@@ -33,6 +33,7 @@
         <div class="panel-body">
           <div class="tabs" id="tabs">
             <button class="tab active" data-key="units">單位</button>
+            <button class="tab" data-key="faction_rules">陣營規則</button>
             <button class="tab" data-key="strategic_ploys">戰略計謀</button>
             <button class="tab" data-key="tactical_ploys">交戰計謀</button>
             <button class="tab" data-key="equipment">陣營裝備</button>
@@ -105,6 +106,14 @@
               <strong data-score-bind-round-total="p1_r4">0</strong>
             </div>
             <div class="score-total-row">總VP <strong data-score-bind-grand-total="p1">0</strong></div>
+            <div class="score-bonus-row" aria-label="玩家A加權項目">
+              <span>加權 x1.5</span>
+              <div class="score-bonus-group">
+                <button type="button" data-score-action="set-bonus" data-score-player="p1" data-score-bonus="main">主</button>
+                <button type="button" data-score-action="set-bonus" data-score-player="p1" data-score-bonus="secondary">副</button>
+                <button type="button" data-score-action="set-bonus" data-score-player="p1" data-score-bonus="kill">擊殺</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -145,6 +154,14 @@
               <strong data-score-bind-round-total="p2_r4">0</strong>
             </div>
             <div class="score-total-row">總VP <strong data-score-bind-grand-total="p2">0</strong></div>
+            <div class="score-bonus-row" aria-label="玩家B加權項目">
+              <span>加權 x1.5</span>
+              <div class="score-bonus-group">
+                <button type="button" data-score-action="set-bonus" data-score-player="p2" data-score-bonus="main">主</button>
+                <button type="button" data-score-action="set-bonus" data-score-player="p2" data-score-bonus="secondary">副</button>
+                <button type="button" data-score-action="set-bonus" data-score-player="p2" data-score-bonus="kill">擊殺</button>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -30,6 +30,7 @@ let selectedWeaponRuleLabel = "";
 let unitCheckedOnly = false;
 let scoreState = {
   p1_name: "",
+  p1_bonus: "main",
   p1_r1_main: 0,
   p1_r1_secondary: 0,
   p1_r1_kill: 0,
@@ -43,6 +44,7 @@ let scoreState = {
   p1_r4_secondary: 0,
   p1_r4_kill: 0,
   p2_name: "",
+  p2_bonus: "main",
   p2_r1_main: 0,
   p2_r1_secondary: 0,
   p2_r1_kill: 0,
@@ -128,6 +130,8 @@ function loadScoreState() {
     if (Number.isFinite(Number(parsed.p2_kill_vp))) scoreState.p2_r1_kill = Number(parsed.p2_kill_vp);
     if (Number.isFinite(Number(parsed.p1_r1_vp))) scoreState.p1_r1_main = Number(parsed.p1_r1_vp);
     if (Number.isFinite(Number(parsed.p2_r1_vp))) scoreState.p2_r1_main = Number(parsed.p2_r1_vp);
+    if (!["main", "secondary", "kill"].includes(scoreState.p1_bonus)) scoreState.p1_bonus = "main";
+    if (!["main", "secondary", "kill"].includes(scoreState.p2_bonus)) scoreState.p2_bonus = "main";
   } catch { }
 }
 
@@ -149,13 +153,27 @@ function getRoundTotal(prefix, round) {
   );
 }
 
-function getGrandTotalVp(prefix) {
+function getCategoryTotal(prefix, category) {
   return (
+    clampScoreValue(scoreState[`${prefix}_r1_${category}`]) +
+    clampScoreValue(scoreState[`${prefix}_r2_${category}`]) +
+    clampScoreValue(scoreState[`${prefix}_r3_${category}`]) +
+    clampScoreValue(scoreState[`${prefix}_r4_${category}`])
+  );
+}
+
+function getGrandTotalVp(prefix) {
+  const baseTotal = (
     getRoundTotal(prefix, "r1") +
     getRoundTotal(prefix, "r2") +
     getRoundTotal(prefix, "r3") +
     getRoundTotal(prefix, "r4")
   );
+  const bonusKey = scoreState[`${prefix}_bonus`];
+  if (!["main", "secondary", "kill"].includes(bonusKey)) return baseTotal;
+  const bonusSum = getCategoryTotal(prefix, bonusKey);
+  const weightedTotal = baseTotal - bonusSum + bonusSum * 1.5;
+  return Math.round(weightedTotal);
 }
 
 function renderScoreUI() {
@@ -171,6 +189,11 @@ function renderScoreUI() {
   scoreOverlay.querySelectorAll("[data-score-bind-grand-total]").forEach((el) => {
     const prefix = el.getAttribute("data-score-bind-grand-total");
     el.textContent = String(getGrandTotalVp(prefix));
+  });
+  scoreOverlay.querySelectorAll("[data-score-action='set-bonus']").forEach((btn) => {
+    const player = btn.getAttribute("data-score-player");
+    const bonus = btn.getAttribute("data-score-bonus");
+    btn.classList.toggle("active", scoreState[`${player}_bonus`] === bonus);
   });
   scoreP1Name.value = scoreState.p1_name || "";
   scoreP2Name.value = scoreState.p2_name || "";
@@ -352,13 +375,14 @@ function renderTeams() {
 function renderItemList() {
   const team = getTeam();
   const items = getItems(team);
+  const isCheckableTab = ["units", "strategic_ploys", "tactical_ploys", "equipment"].includes(currentTab);
   if (!items.length) {
     itemList.innerHTML = `<div class="meta">此分類尚無資料。</div>`;
     currentItemId = "";
     return;
   }
   if (!items.some((x) => x.id === currentItemId)) currentItemId = items[0].id;
-  if (["units", "strategic_ploys", "tactical_ploys", "equipment"].includes(currentTab)) {
+  if (["units", "strategic_ploys", "tactical_ploys", "equipment", "faction_rules"].includes(currentTab)) {
     let visibleItems = items;
     if (currentTab === "units" && unitCheckedOnly) {
       visibleItems = items.filter((it) => {
@@ -384,7 +408,7 @@ function renderItemList() {
         const maxWounds = Number(it?.stats?.wounds ?? 0);
         const currentWounds = currentTab === "units" ? getCurrentWounds(team.id, it) : null;
         return `<div class="item-row">
-                <input type="checkbox" class="list-check" data-key="${key}" ${listChecks[key] ? "checked" : ""} />
+                ${isCheckableTab ? `<input type="checkbox" class="list-check" data-key="${key}" ${listChecks[key] ? "checked" : ""} />` : `<span></span>`}
                 <button class="item-btn ${it.id === currentItemId ? "active" : ""} ${usedClass}" data-id="${it.id}">${it.name}</button>
                 ${
                   currentTab === "units"
@@ -514,6 +538,7 @@ function renderDetail() {
 
 function tabLabel(key) {
   if (key === "units") return "單位";
+  if (key === "faction_rules") return "陣營規則";
   if (key === "strategic_ploys") return "戰略計謀";
   if (key === "tactical_ploys") return "交戰計謀";
   if (key === "equipment") return "陣營裝備";
@@ -682,6 +707,18 @@ scoreOverlay.addEventListener("click", (e) => {
   renderScoreUI();
 });
 
+scoreOverlay.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-score-action='set-bonus']");
+  if (!btn) return;
+  const player = btn.dataset.scorePlayer;
+  const bonus = btn.dataset.scoreBonus;
+  if (!["p1", "p2"].includes(player)) return;
+  if (!["main", "secondary", "kill"].includes(bonus)) return;
+  scoreState[`${player}_bonus`] = bonus;
+  saveScoreState();
+  renderScoreUI();
+});
+
 scoreP1Name.addEventListener("input", () => {
   scoreState.p1_name = scoreP1Name.value;
   saveScoreState();
@@ -700,6 +737,7 @@ scoreNotes.addEventListener("input", () => {
 scoreResetBtn.addEventListener("click", () => {
   scoreState = {
     p1_name: scoreState.p1_name || "",
+    p1_bonus: scoreState.p1_bonus || "main",
     p1_r1_main: 0,
     p1_r1_secondary: 0,
     p1_r1_kill: 0,
@@ -713,6 +751,7 @@ scoreResetBtn.addEventListener("click", () => {
     p1_r4_secondary: 0,
     p1_r4_kill: 0,
     p2_name: scoreState.p2_name || "",
+    p2_bonus: scoreState.p2_bonus || "main",
     p2_r1_main: 0,
     p2_r1_secondary: 0,
     p2_r1_kill: 0,
