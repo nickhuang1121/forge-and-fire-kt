@@ -1,4 +1,5 @@
 const teamSelect = document.getElementById("teamSelect");
+const toggleScriptBtn = document.getElementById("toggleScriptBtn");
 const fontSize = document.getElementById("fontSize");
 const teamMeta = document.getElementById("teamMeta");
 const tabs = document.getElementById("tabs");
@@ -46,6 +47,11 @@ let weaponRules = { rules: {} };
 let selectedWeaponRuleKey = "";
 let selectedWeaponRuleLabel = "";
 let unitCheckedOnly = false;
+const RULE_ALIASES = {
+  "眩晕": "晕眩",
+  "眩暈": "晕眩",
+  "暈眩": "晕眩"
+};
 let timerRunning = false;
 let timerHasStarted = false;
 let timerElapsedMs = 0;
@@ -89,6 +95,133 @@ const LIST_CHECKS_KEY = "kt_list_checks_v1";
 const UNIT_FILTER_KEY = "kt_units_checked_only_v1";
 const UNIT_WOUNDS_KEY = "kt_unit_wounds_v1";
 const SCORE_STATE_KEY = "kt_score_state_v1";
+const SCRIPT_MODE_KEY = "kt_script_mode_v1";
+let scriptMode = "zh-CN";
+
+const TRAD_PHRASE_MAP = {
+  "战略计谋": "戰略計謀",
+  "交战计谋": "交戰計謀",
+  "阵营装备": "陣營裝備",
+  "阵营规则": "陣營規則",
+  "武器规则": "武器規則",
+  "转折点": "轉折點",
+  "战斗": "戰鬥",
+  "伤害": "傷害",
+  "掷骰": "擲骰",
+  "关键成功": "關鍵成功",
+  "关键穿刺": "關鍵穿刺",
+  "重掷": "重擲",
+  "残废": "殘廢",
+  "标识": "標識",
+  "移动": "移動",
+  "规则": "規則",
+  "队长": "隊長",
+  "队伍": "隊伍",
+  "单位": "單位",
+  "侦察": "偵察",
+  "领袖": "領袖",
+  "战役": "戰役",
+  "标记": "標記",
+  "关键字": "關鍵字",
+  "击杀": "擊殺",
+  "后撤": "後撤"
+};
+
+const TRAD_CHAR_MAP = {
+  "战": "戰", "术": "術", "计": "計", "谋": "謀", "阵": "陣", "营": "營", "规": "規", "则": "則",
+  "伤": "傷", "击": "擊", "杀": "殺", "转": "轉", "为": "為", "与": "與", "将": "將", "并": "並",
+  "掷": "擲", "残": "殘", "废": "廢", "标": "標", "识": "識", "见": "見", "级": "級",
+  "敌": "敵", "时": "時", "动": "動", "风": "風", "灵": "靈", "毁": "毀", "灭": "滅",
+  "护": "護", "网": "網", "减": "減", "药": "藥", "疗": "療", "测": "測", "过": "過",
+  "这": "這", "个": "個", "么": "麼", "们": "們", "对": "對", "后": "後", "发": "發",
+  "进": "進", "体": "體", "开": "開", "关": "關", "门": "門", "样": "樣", "从": "從",
+  "两": "兩", "点": "點", "应": "應", "当": "當", "让": "讓", "内": "內", "圣": "聖",
+  "装": "裝", "备": "備", "坚": "堅", "锤": "錘", "枪": "槍", "剑": "劍", "链": "鏈",
+  "锯": "鋸", "导": "導", "阶": "階", "电": "電", "压": "壓", "复": "復", "苏": "蘇",
+  "长": "長", "领": "領", "亚": "亞", "异": "異", "隐": "隱", "晕": "暈",
+  "简": "簡", "侦": "偵", "佣": "傭", "众": "眾", "优": "優", "会": "會",
+  "伞": "傘", "传": "傳", "伤": "傷", "伦": "倫", "伪": "偽", "侧": "側",
+  "侦": "偵", "储": "儲", "儿": "兒", "党": "黨", "册": "冊", "写": "寫",
+  "军": "軍", "农": "農", "冲": "衝", "决": "決", "净": "淨", "凉": "涼",
+  "减": "減", "凑": "湊", "击": "擊", "刘": "劉", "划": "劃", "剧": "劇",
+  "办": "辦", "务": "務", "势": "勢", "勋": "勳", "匀": "勻", "区": "區",
+  "协": "協", "单": "單", "卖": "賣", "卢": "盧", "卫": "衛", "却": "卻",
+  "厂": "廠", "历": "歷", "压": "壓", "厌": "厭", "县": "縣", "叁": "參",
+  "双": "雙", "发": "發", "变": "變", "叙": "敘", "叶": "葉", "号": "號",
+  "后": "後", "启": "啟", "吴": "吳", "员": "員", "响": "響", "问": "問",
+  "啰": "囉", "围": "圍", "图": "圖", "圆": "圓", "国": "國", "圣": "聖",
+  "场": "場", "坏": "壞", "块": "塊", "坚": "堅", "坛": "壇", "坠": "墜",
+  "垄": "壟", "垒": "壘", "处": "處", "备": "備", "复": "復", "够": "夠",
+  "头": "頭", "夹": "夾", "夺": "奪", "奋": "奮", "奖": "獎", "妈": "媽",
+  "妇": "婦", "孙": "孫", "学": "學", "宁": "寧", "实": "實", "审": "審",
+  "宫": "宮", "宽": "寬", "宾": "賓", "对": "對", "寻": "尋", "导": "導",
+  "寿": "壽", "将": "將", "尘": "塵", "尔": "爾", "尝": "嘗", "层": "層",
+  "属": "屬", "岁": "歲", "岂": "豈", "岗": "崗", "岛": "島", "岭": "嶺",
+  "岳": "嶽", "峡": "峽", "币": "幣", "帅": "帥", "师": "師", "帐": "帳",
+  "帘": "簾", "帮": "幫", "带": "帶", "库": "庫", "应": "應", "庙": "廟",
+  "广": "廣", "庆": "慶", "庐": "廬", "废": "廢", "开": "開", "异": "異",
+  "弃": "棄", "张": "張", "弥": "彌", "归": "歸", "当": "當", "录": "錄",
+  "彻": "徹", "忆": "憶", "忧": "憂", "怀": "懷", "态": "態", "总": "總",
+  "恋": "戀", "惊": "驚", "惧": "懼", "惯": "慣", "戏": "戲", "户": "戶",
+  "战": "戰", "护": "護", "报": "報", "担": "擔", "拟": "擬", "择": "擇",
+  "拢": "攏", "拥": "擁", "挂": "掛", "挥": "揮", "损": "損", "换": "換",
+  "据": "據", "掳": "擄", "掷": "擲", "掸": "撣", "掺": "摻", "插": "插",
+  "揽": "攬", "敌": "敵", "数": "數", "断": "斷", "时": "時", "显": "顯",
+  "晋": "晉", "晒": "曬", "晓": "曉", "暂": "暫", "术": "術", "杂": "雜",
+  "权": "權", "条": "條", "来": "來", "杨": "楊", "极": "極", "构": "構",
+  "枪": "槍", "枢": "樞", "样": "樣", "树": "樹", "桥": "橋", "检": "檢",
+  "楼": "樓", "横": "橫", "欢": "歡", "步": "步", "岁": "歲", "毁": "毀",
+  "气": "氣", "汇": "匯", "汉": "漢", "汤": "湯", "沟": "溝", "没": "沒",
+  "洁": "潔", "测": "測", "济": "濟", "浓": "濃", "涛": "濤", "灭": "滅",
+  "灯": "燈", "灵": "靈", "灾": "災", "炉": "爐", "点": "點", "炼": "煉",
+  "热": "熱", "烟": "煙", "烦": "煩", "烧": "燒", "烛": "燭", "爱": "愛",
+  "爷": "爺", "牵": "牽", "状": "狀", "犹": "猶", "猎": "獵", "猫": "貓",
+  "献": "獻", "环": "環", "现": "現", "电": "電", "画": "畫", "畅": "暢",
+  "疗": "療", "疮": "瘡", "疯": "瘋", "监": "監", "盖": "蓋", "盘": "盤",
+  "着": "著", "睁": "睜", "确": "確", "碍": "礙", "礼": "禮", "祸": "禍",
+  "离": "離", "种": "種", "稳": "穩", "窥": "窺", "竞": "競", "笔": "筆",
+  "笼": "籠", "签": "簽", "简": "簡", "粮": "糧", "纪": "紀", "纤": "纖",
+  "约": "約", "级": "級", "纳": "納", "纵": "縱", "纸": "紙", "纹": "紋",
+  "线": "線", "练": "練", "组": "組", "绅": "紳", "细": "細", "织": "織",
+  "终": "終", "绍": "紹", "经": "經", "绑": "綁", "结": "結", "给": "給",
+  "绝": "絕", "统": "統", "继": "繼", "续": "續", "绳": "繩", "维": "維",
+  "综": "綜", "绿": "綠", "缓": "緩", "编": "編", "缘": "緣", "缝": "縫",
+  "缩": "縮", "缴": "繳", "网": "網", "罗": "羅", "罚": "罰", "职": "職",
+  "联": "聯", "聪": "聰", "肃": "肅", "肠": "腸", "肤": "膚", "脏": "臟",
+  "脚": "腳", "脱": "脫", "脸": "臉", "舰": "艦", "艺": "藝", "节": "節",
+  "苏": "蘇", "范": "範", "荣": "榮", "药": "藥", "获": "獲", "虫": "蟲",
+  "虽": "雖", "蚀": "蝕", "蚁": "蟻", "补": "補", "装": "裝", "袭": "襲",
+  "见": "見", "规": "規", "觉": "覺", "览": "覽", "触": "觸", "订": "訂",
+  "计": "計", "认": "認", "讨": "討", "让": "讓", "讯": "訊", "议": "議",
+  "记": "記", "讲": "講", "讳": "諱", "讶": "訝", "许": "許", "论": "論",
+  "设": "設", "访": "訪", "证": "證", "评": "評", "词": "詞", "译": "譯",
+  "试": "試", "诗": "詩", "诚": "誠", "话": "話", "该": "該", "详": "詳",
+  "语": "語", "误": "誤", "说": "說", "请": "請", "诸": "諸", "诺": "諾",
+  "读": "讀", "课": "課", "谁": "誰", "调": "調", "谈": "談", "谋": "謀",
+  "谍": "諜", "谢": "謝", "谣": "謠", "谱": "譜", "贝": "貝", "负": "負",
+  "财": "財", "责": "責", "败": "敗", "账": "賬", "货": "貨", "质": "質",
+  "购": "購", "贯": "貫", "贱": "賤", "赏": "賞", "赔": "賠", "赖": "賴",
+  "赘": "贅", "赢": "贏", "赵": "趙", "赶": "趕", "趋": "趨", "跃": "躍",
+  "轨": "軌", "轮": "輪", "软": "軟", "转": "轉", "轻": "輕", "载": "載",
+  "较": "較", "辅": "輔", "辆": "輛", "边": "邊", "辽": "遼", "达": "達",
+  "迁": "遷", "过": "過", "还": "還", "这": "這", "进": "進", "远": "遠",
+  "违": "違", "连": "連", "迟": "遲", "适": "適", "选": "選", "递": "遞",
+  "逻": "邏", "遗": "遺", "邮": "郵", "邻": "鄰", "郁": "鬱", "郑": "鄭",
+  "酱": "醬", "释": "釋", "里": "裡", "鉴": "鑑", "针": "針", "钟": "鐘",
+  "钢": "鋼", "钥": "鑰", "钉": "釘", "钩": "鉤", "钱": "錢", "钳": "鉗",
+  "钻": "鑽", "铁": "鐵", "铃": "鈴", "铜": "銅", "铠": "鎧", "银": "銀",
+  "铭": "銘", "铺": "鋪", "链": "鏈", "销": "銷", "锁": "鎖", "锅": "鍋",
+  "锤": "錘", "锻": "鍛", "键": "鍵", "锯": "鋸", "镇": "鎮", "镜": "鏡",
+  "长": "長", "门": "門", "闭": "閉", "问": "問", "闲": "閒", "间": "間",
+  "闷": "悶", "闻": "聞", "阁": "閣", "队": "隊", "际": "際", "阳": "陽",
+  "阴": "陰", "阵": "陣", "阶": "階", "随": "隨", "隐": "隱", "难": "難",
+  "雾": "霧", "静": "靜", "预": "預", "领": "領", "颇": "頗", "频": "頻",
+  "题": "題", "颜": "顏", "额": "額", "风": "風", "飞": "飛", "饥": "飢",
+  "饭": "飯", "饮": "飲", "饰": "飾", "馆": "館", "驱": "驅", "验": "驗",
+  "驳": "駁", "驻": "駐", "骑": "騎", "骗": "騙", "骚": "騷", "骤": "驟",
+  "鱼": "魚", "鲜": "鮮", "鸣": "鳴", "鸭": "鴨", "鸡": "雞", "麦": "麥",
+  "黄": "黃", "点": "點", "齐": "齊", "龙": "龍"
+};
 
 function loadWeaponChecks() {
   try {
@@ -136,6 +269,26 @@ function loadUnitWounds() {
 
 function saveUnitWounds() {
   localStorage.setItem(UNIT_WOUNDS_KEY, JSON.stringify(unitWounds));
+}
+
+function loadScriptMode() {
+  const saved = localStorage.getItem(SCRIPT_MODE_KEY);
+  scriptMode = saved === "zh-Hant" ? "zh-Hant" : "zh-CN";
+  updateScriptButtonLabel();
+}
+
+function saveScriptMode() {
+  localStorage.setItem(SCRIPT_MODE_KEY, scriptMode);
+}
+
+function updateScriptButtonLabel() {
+  if (!toggleScriptBtn) return;
+  const isTrad = scriptMode === "zh-Hant";
+  toggleScriptBtn.textContent = isTrad ? "簡/繁：繁" : "簡/繁：簡";
+  toggleScriptBtn.title = isTrad ? "目前：繁體（點擊切換簡體）" : "目前：简体（點擊切換繁體）";
+  toggleScriptBtn.classList.toggle("is-trad", isTrad);
+  document.documentElement.lang = isTrad ? "zh-Hant" : "zh-Hans";
+  document.body.dataset.scriptMode = scriptMode;
 }
 
 function loadScoreState() {
@@ -681,6 +834,23 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function toTraditional(text) {
+  let out = String(text ?? "");
+  const phraseKeys = Object.keys(TRAD_PHRASE_MAP).sort((a, b) => b.length - a.length);
+  for (const k of phraseKeys) out = out.split(k).join(TRAD_PHRASE_MAP[k]);
+  out = out.split("").map((ch) => TRAD_CHAR_MAP[ch] || ch).join("");
+  return out;
+}
+
+function convertForDisplay(value) {
+  const raw = String(value ?? "");
+  return scriptMode === "zh-Hant" ? toTraditional(raw) : raw;
+}
+
+function displayHtml(value) {
+  return escapeHtml(convertForDisplay(value));
+}
+
 async function loadWeaponRules() {
   const candidates = [
     "data/weapon_rules_zh_cn.json",
@@ -700,13 +870,19 @@ async function loadWeaponRules() {
 }
 
 function getRuleKey(token) {
-  const t = normalizeRuleToken(token);
+  const t = toCanonicalRuleToken(token)
+    .replace(/^\d+\s*[\"“”]?\s*/g, "");
   const keys = [
     "关键穿刺", "穿刺", "精准", "平衡", "爆炸", "残暴", "无休", "毁灭", "重型",
     "过热", "致命", "有限", "重击", "范围", "毫不留情", "撕裂", "集中", "追踪",
-    "严重", "震荡", "安静", "晕眩", "洪流", "灵能", "毒素", "剧毒", "乱射", "隐匿位置"
+    "严重", "震荡", "安静", "晕眩", "洪流", "灵能", "增幅", "毒素", "剧毒", "乱射", "隐匿位置"
   ];
   return keys.find((k) => t.startsWith(k)) || "";
+}
+
+function toCanonicalRuleToken(token) {
+  const t = normalizeRuleToken(token);
+  return RULE_ALIASES[t] || t;
 }
 
 function normalizeRuleToken(token) {
@@ -725,12 +901,12 @@ function renderWeaponRulesCell(rawRules) {
     .split(/[、，,]/)
     .map((s) => normalizeRuleToken(s))
     .filter(Boolean);
-  if (!tokens.length) return escapeHtml(text);
+  if (!tokens.length) return displayHtml(text);
   return `<div class="rule-chips">${tokens.map((token) => {
     const key = getRuleKey(token);
-    if (!key || !weaponRules.rules?.[key]) return `<span>${escapeHtml(token)}</span>`;
+    if (!key || !weaponRules.rules?.[key]) return `<span>${displayHtml(token)}</span>`;
     const active = key === selectedWeaponRuleKey ? "active" : "";
-    return `<button type="button" class="rule-chip ${active}" data-rule-key="${escapeHtml(key)}" data-rule-label="${escapeHtml(token)}">${escapeHtml(token)}</button>`;
+    return `<button type="button" class="rule-chip ${active}" data-rule-key="${escapeHtml(key)}" data-rule-label="${escapeHtml(token)}">${displayHtml(token)}</button>`;
   }).join("")}</div>`;
 }
 
@@ -739,7 +915,10 @@ function escapeRegExp(text) {
 }
 
 function getLinkableRuleKeys() {
-  return Object.keys(weaponRules.rules || {})
+  return Array.from(new Set([
+    ...Object.keys(weaponRules.rules || {}),
+    ...Object.keys(RULE_ALIASES)
+  ]))
     .filter(Boolean)
     .sort((a, b) => b.length - a.length);
 }
@@ -754,25 +933,26 @@ function renderTextWithRuleLinks(rawText) {
   const text = String(rawText ?? "");
   if (!text) return "";
   const keys = getLinkableRuleKeys();
-  if (!keys.length) return escapeHtml(text);
+  if (!keys.length) return displayHtml(text);
   const regex = new RegExp(`(${keys.map(escapeRegExp).join("|")})`, "g");
   let out = "";
   let last = 0;
   let match = regex.exec(text);
   while (match) {
     const idx = match.index;
-    const key = match[0];
-    out += escapeHtml(text.slice(last, idx));
+    const rawKey = match[0];
+    const key = RULE_ALIASES[rawKey] || rawKey;
+    out += displayHtml(text.slice(last, idx));
     if (!weaponRules.rules?.[key] || shouldSkipRuleLink(text, key, idx)) {
-      out += escapeHtml(key);
+      out += displayHtml(rawKey);
     } else {
       const active = key === selectedWeaponRuleKey ? "active" : "";
-      out += `<button type="button" class="rule-chip ${active}" data-rule-key="${escapeHtml(key)}" data-rule-label="${escapeHtml(key)}">${escapeHtml(key)}</button>`;
+      out += `<button type="button" class="rule-chip ${active}" data-rule-key="${escapeHtml(key)}" data-rule-label="${escapeHtml(rawKey)}">${displayHtml(rawKey)}</button>`;
     }
-    last = idx + key.length;
+    last = idx + rawKey.length;
     match = regex.exec(text);
   }
-  out += escapeHtml(text.slice(last));
+  out += displayHtml(text.slice(last));
   return out;
 }
 
@@ -783,7 +963,53 @@ function renderAbilityText(rawText) {
   if (colonIndex < 0) return renderTextWithRuleLinks(text);
   const namePart = text.slice(0, colonIndex + 1);
   const descPart = text.slice(colonIndex + 1);
-  return `<span class="ability-name">${escapeHtml(namePart)}</span>${renderTextWithRuleLinks(descPart)}`;
+  return `<span class="ability-name">${displayHtml(namePart)}</span>${renderTextWithRuleLinks(descPart)}`;
+}
+
+function getUnitKeywordList(team, item) {
+  if (Array.isArray(item?.keywords) && item.keywords.length) {
+    return item.keywords.filter(Boolean).map((x) => String(x).trim()).filter(Boolean);
+  }
+  const fallback = [];
+  if (team?.name) fallback.push(String(team.name).replace("殺戮小隊", "").trim());
+  if (item?.name) fallback.push(String(item.name).trim());
+  return fallback.filter(Boolean);
+}
+
+function renderUnitKeywords(team, item) {
+  const keywordLine = String(item?.keywords_line || "").trim();
+  if (keywordLine) {
+    return `<div class="unit-keywords">
+              <div class="unit-keywords-line">${displayHtml(keywordLine)}</div>
+            </div>`;
+  }
+  const keywords = getUnitKeywordList(team, item);
+  if (!keywords.length) return "";
+  return `<div class="unit-keywords">
+            <div class="unit-keyword-chips">
+              ${keywords.map((k) => `<span class="unit-keyword-chip">${displayHtml(k)}</span>`).join("")}
+            </div>
+          </div>`;
+}
+
+function renderItemImages(item) {
+  const images = Array.isArray(item?.images) ? item.images : [];
+  if (!images.length) return "";
+  return `<div class="card">
+            <h3>示意圖</h3>
+            <div class="item-image-list">
+              ${images
+      .map((img) => {
+        const src = typeof img === "string" ? img : img?.src || "";
+        const alt = typeof img === "string" ? item?.name || "示意圖" : img?.alt || item?.name || "示意圖";
+        if (!src) return "";
+        return `<figure class="item-image-figure">
+                  <img class="item-image" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" />
+                </figure>`;
+      })
+      .join("")}
+            </div>
+          </div>`;
 }
 
 function renderRuleModal() {
@@ -791,11 +1017,11 @@ function renderRuleModal() {
   return `<div class="rule-modal-overlay" data-close-rule-modal="1">
             <div class="rule-modal" role="dialog" aria-modal="true" aria-label="武器規則說明">
               <div class="rule-modal-head">
-                <h3>武器規則說明：${escapeHtml(selectedWeaponRuleLabel || selectedWeaponRuleKey)}</h3>
+                <h3>武器規則說明：${displayHtml(selectedWeaponRuleLabel || selectedWeaponRuleKey)}</h3>
                 <button class="rule-modal-close" type="button" data-close-rule-modal="1">關閉</button>
               </div>
               <div class="rule-modal-body">
-                <div class="text">${escapeHtml(weaponRules.rules[selectedWeaponRuleKey])}</div>
+                <div class="text">${displayHtml(weaponRules.rules[selectedWeaponRuleKey])}</div>
               </div>
             </div>
           </div>`;
@@ -851,7 +1077,7 @@ function getItems(team) {
 
 function renderTeams() {
   teamSelect.innerHTML = doc.teams
-    .map((t) => `<option value="${t.id}">${t.name}</option>`)
+    .map((t) => `<option value="${t.id}">${displayHtml(t.name)}</option>`)
     .join("");
   teamSelect.value = currentTeamId;
 }
@@ -893,7 +1119,9 @@ function renderItemList() {
         const currentWounds = currentTab === "units" ? getCurrentWounds(team.id, it) : null;
         return `<div class="item-row">
                 ${isCheckableTab ? `<input type="checkbox" class="list-check" data-key="${key}" ${listChecks[key] ? "checked" : ""} />` : `<span></span>`}
-                <button class="item-btn ${it.id === currentItemId ? "active" : ""} ${usedClass}" data-id="${it.id}">${it.name}</button>
+                <div class="item-btn-wrap">
+                  <button class="item-btn ${it.id === currentItemId ? "active" : ""} ${usedClass}" data-id="${it.id}">${displayHtml(it.name)}</button>
+                </div>
                 ${
                   currentTab === "units"
                     ? `<div class="wound-controls">
@@ -921,7 +1149,7 @@ function renderDetail() {
   const items = getItems(team);
   const item = items.find((x) => x.id === currentItemId);
 
-  teamMeta.innerHTML = `隊伍：<strong>${team.name}</strong>　|　PDF：<a href="${team.pdf_url}" target="_blank" rel="noreferrer">開啟來源</a>`;
+  teamMeta.innerHTML = `隊伍：<strong>${displayHtml(team.name)}</strong>　|　PDF：<a href="${team.pdf_url}" target="_blank" rel="noreferrer">開啟來源</a>`;
   if (!item) {
     detailTitle.textContent = "內容";
     detailView.innerHTML = `<div class="meta">沒有可顯示內容</div>`;
@@ -929,15 +1157,15 @@ function renderDetail() {
     return;
   }
 
-  detailTitle.textContent = `${team.name} / ${tabLabel(currentTab)} / ${item.name}`;
+  detailTitle.textContent = convertForDisplay(`${team.name} / ${tabLabel(currentTab)} / ${item.name}`);
 
-  const mainText = item.summary || item.effect || "";
+  const mainText = item.effect || "";
   const ruleModalHtml = renderRuleModal();
   if (ruleModalRoot) ruleModalRoot.innerHTML = ruleModalHtml;
   const shouldLinkRulesInMainText = ["faction_rules", "strategic_ploys", "tactical_ploys"].includes(currentTab);
   const mainTextHtml = shouldLinkRulesInMainText
     ? renderTextWithRuleLinks(mainText)
-    : escapeHtml(mainText || "（尚未填寫）");
+    : displayHtml(mainText || "（尚未填寫）");
 
   if (currentTab === "units") {
     const st = item.stats || {};
@@ -945,7 +1173,7 @@ function renderDetail() {
     const abilities = item.abilities || [];
     detailView.innerHTML = `
             <div class="card">
-              <h3>${item.name}</h3>
+              <h3>${displayHtml(item.name)}</h3>
               <div class="stats">
                 <div class="stat"><div class="k">APL</div><div class="v">${st.apl ?? "-"}</div></div>
                 <div class="stat"><div class="k">移動</div><div class="v">${st.move ?? "-"}</div></div>
@@ -973,7 +1201,7 @@ function renderDetail() {
                                   ${weaponChecks[key] ? "checked" : ""}
                                 />
                               </td>
-                              <td>${w.name || "-"}</td>
+                              <td>${displayHtml(w.name || "-")}</td>
                               <td>${w.atk ?? "-"}</td>
                               <td>${w.hit ?? "-"}</td>
                               <td>${w.dmg ?? "-"}</td>
@@ -994,8 +1222,8 @@ function renderDetail() {
       }
             </div>
             <div class="card">
-              <h3>隊伍備註</h3>
-              <div class="text">${team.notes || "（無）"}</div>
+              <h3>關鍵字</h3>
+              ${renderUnitKeywords(team, item)}
             </div>
           `;
     return;
@@ -1003,13 +1231,10 @@ function renderDetail() {
 
   detailView.innerHTML = `
           <div class="card">
-            <h3>${item.name}</h3>
+            <h3>${displayHtml(item.name)}</h3>
             <div class="text">${mainTextHtml}</div>
           </div>
-          <div class="card">
-            <h3>隊伍備註</h3>
-            <div class="text">${team.notes || "（無）"}</div>
-          </div>
+          ${renderItemImages(item)}
         `;
 }
 
@@ -1159,6 +1384,18 @@ if (ruleModalRoot) {
       selectedWeaponRuleLabel = "";
       renderDetail();
     }
+  });
+}
+
+if (toggleScriptBtn) {
+  toggleScriptBtn.addEventListener("click", () => {
+    scriptMode = scriptMode === "zh-Hant" ? "zh-CN" : "zh-Hant";
+    saveScriptMode();
+    updateScriptButtonLabel();
+    renderTeams();
+    renderItemList();
+    renderDetail();
+    renderScoreUI();
   });
 }
 
@@ -1334,6 +1571,7 @@ if (scoreTimerEndBtn) {
   });
 }
 
+loadScriptMode();
 loadWeaponChecks();
 loadListChecks();
 loadUnitFilter();
