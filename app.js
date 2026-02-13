@@ -3,6 +3,7 @@ const toggleScriptBtn = document.getElementById("toggleScriptBtn");
 const fontSize = document.getElementById("fontSize");
 const teamMeta = document.getElementById("teamMeta");
 const tabs = document.getElementById("tabs");
+const listPanelTitle = document.getElementById("listPanelTitle");
 const itemList = document.getElementById("itemList");
 const detailTitle = document.getElementById("detailTitle");
 const detailView = document.getElementById("detailView");
@@ -1182,6 +1183,20 @@ function renderTeams() {
   teamSelect.value = currentTeamId;
 }
 
+function listTitleByTab(key) {
+  if (key === "units") return "特工清單";
+  if (key === "faction_rules") return "陣營規則";
+  if (key === "strategic_ploys") return "戰略計謀";
+  if (key === "tactical_ploys") return "交戰計謀";
+  if (key === "equipment") return "陣營裝備";
+  return "特工清單";
+}
+
+function renderListPanelTitle() {
+  if (!listPanelTitle) return;
+  listPanelTitle.textContent = listTitleByTab(currentTab);
+}
+
 function renderItemList() {
   const team = getTeam();
   const items = getItems(team);
@@ -1352,6 +1367,7 @@ function tabLabel(key) {
 }
 
 function renderAll() {
+  renderListPanelTitle();
   renderItemList();
   renderDetail();
 }
